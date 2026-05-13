@@ -1,0 +1,18 @@
+{
+  "name": "gemini-jetson-cli",
+  "version": "0.1.0",
+  "description": "Jetson-native AI CLI assistant powered by Gemini",
+  "type": "module",
+  "bin": {
+    "jetson-ai": "./bin/jetson-ai.js"
+  },
+  "scripts": {
+    "start": "node bin/jetson-ai.js",
+    "doctor": "node bin/jetson-ai.js doctor"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "commander": "^14.0.0",
+    "dotenv": "^17.2.3"
+  }
+}
