@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+import { runAnalyze } from "../src/commands/analyze.js";
 import { Command } from "commander";
 import { runDoctor } from "../src/commands/doctor.js";
 import { runAsk } from "../src/commands/ask.js";
@@ -22,6 +22,14 @@ program
   .argument("<question...>", "Question to ask")
   .action((questionParts) => {
     runAsk(questionParts.join(" "));
+  });
+
+program
+  .command("analyze")
+  .description("Analyze logs or error files with Gemini")
+  .argument("<file>", "File to analyze")
+  .action((file) => {
+    runAnalyze(file);
   });
 
 program.parse();
