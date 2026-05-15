@@ -54,7 +54,9 @@ program
 
 program
   .command("monitor")
-  .description("Show a live Jetson system snapshot")
-  .action(runMonitor);
-
+  .description("Show Jetson system monitor")
+  .option("-w, --watch", "Continuously refresh monitor")
+  .action((options) => {
+    runMonitor(options);
+  });
 program.parse();
