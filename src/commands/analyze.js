@@ -1,7 +1,7 @@
 import fs from "fs";
 import { askGemini } from "../core/gemini.js";
 
-export async function runAnalyze(filePath) {
+export async function runAnalyze(filePath, options = {}) {
   if (!filePath) {
     console.error("Please provide a file path.");
     process.exit(1);
@@ -14,7 +14,31 @@ export async function runAnalyze(filePath) {
 
   const content = fs.readFileSync(filePath, "utf8");
 
-  const prompt = `
+  const prompt = options.json
+    ? `
+Analyze this Jetson-related log/error output.
+
+Return ONLY valid JSON with this exact structure:
+
+{
+  "summary": "",
+  "rootCause": "",
+  "severity": "low | medium | high",
+  "recommendedFixes": [
+    {
+      "title": "",
+      "commands": [],
+      "safeToAutomate": true,
+      "relatedJetsonAiCommand": ""
+    }
+  ],
+  "warnings": []
+}
+
+Log:
+${content}
+`
+    : `
 Analyze this Jetson-related log/error output.
 
 Return:
@@ -27,6 +51,19 @@ Log:
 ${content}
 `;
 
-  console.log("\nAnalyzing with Gemini...\n");
-  console.log(await askGemini(prompt));
+  console.log(options.json ? "" : "\nAnalyzing with Gemini...\n");
+
+  const response = await askGemini(prompt);
+
+  if (options.json) {
+    const cleaned = response
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+
+    console.log(cleaned);
+    return;
+  }
+
+  console.log(response);
 }
