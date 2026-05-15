@@ -41,6 +41,7 @@ program
   .description("Analyze logs or error files with Gemini")
   .argument("<file>", "File to analyze")
   .option("--json", "Return structured JSON analysis")
+  .option("--fix", "Detect known safe fixes")
   .action((file, options) => {
     runAnalyze(file, options);
   });
