@@ -40,8 +40,9 @@ program
   .command("analyze")
   .description("Analyze logs or error files with Gemini")
   .argument("<file>", "File to analyze")
-  .action((file) => {
-    runAnalyze(file);
+  .option("--json", "Return structured JSON analysis")
+  .action((file, options) => {
+    runAnalyze(file, options);
   });
 
 program
