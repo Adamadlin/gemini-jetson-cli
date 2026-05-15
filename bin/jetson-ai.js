@@ -5,6 +5,7 @@ import { runDoctor } from "../src/commands/doctor.js";
 import { runAsk } from "../src/commands/ask.js";
 import { runFix } from "../src/commands/fix.js";
 import { runMonitor } from "../src/commands/monitor.js";
+import { printBanner } from "../src/ui/banner.js";
 
 const program = new Command();
 
@@ -59,4 +60,8 @@ program
   .action((options) => {
     runMonitor(options);
   });
+if (process.argv.length === 2) {
+  printBanner();
+  process.exit(0);
+}
 program.parse();
