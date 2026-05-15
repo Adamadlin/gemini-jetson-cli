@@ -36,10 +36,11 @@ program
 
 program
   .command("fix")
-  .description("Suggest fixes for Jetson system issues")
+  .description("Suggest or apply safe fixes for Jetson system issues")
   .argument("<target>", "Fix target, for example: cuda")
-  .action((target) => {
-    runFix(target);
+  .option("--apply", "Apply the safe fix")
+  .action((target, options) => {
+    runFix(target, options);
   });
 
 program
