@@ -75,8 +75,13 @@ function printSection(title, content) {
   );
 }
 
-export function runDoctor() {
+export function runDoctor(options = {}) {
   const ctx = getSystemContext();
+
+if (options.json) {
+  console.log(JSON.stringify(ctx, null, 2));
+  return;
+}
 
   console.log(
     chalk.cyan.bold(`
