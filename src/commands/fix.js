@@ -1,107 +1,141 @@
 import { execSync } from "child_process";
-import fs from "fs";
-import os from "os";
-import path from "path";
 import chalk from "chalk";
 
 function run(command) {
   try {
-    return execSync(command, { encoding: "utf8" }).trim();
+    return execSync(command, {
+      encoding: "utf8"
+    }).trim();
   } catch {
-    return "";
+    return null;
   }
 }
 
-function print(title, value) {
+function section(title, value) {
   console.log(chalk.yellow.bold(`\n▶ ${title}`));
   console.log(value || "Not available");
 }
 
-function appendIfMissing(filePath, line) {
-  const existing = fs.existsSync(filePath)
-    ? fs.readFileSync(filePath, "utf8")
-    : "";
+function applyCudaFix() {
+  run(`grep -qxF 'export PATH=/usr/local/cuda/bin:$PATH' ~/.bashrc || echo 'export PATH=/usr/local/cuda/bin:$PATH' >> ~/.bashrc`);
 
-  if (!existing.includes(line)) {
-    fs.appendFileSync(filePath, `\n${line}\n`);
-    return true;
-  }
+  run(`grep -qxF 'export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH' ~/.bashrc || echo 'export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc`);
 
-  return false;
+  console.log(
+    chalk.green.bold("\n✔ CUDA PATH fix applied.\n")
+  );
+
+  console.log("Run:");
+  console.log(chalk.cyan("source ~/.bashrc"));
+  console.log(chalk.cyan("nvcc --version"));
+}
+
+function applyDockerFix() {
+  console.log(
+    chalk.cyan.bold("\nApplying Docker fixes...\n")
+  );
+
+  run("sudo systemctl start docker");
+  run("sudo usermod -aG docker $USER");
+
+  console.log(
+    chalk.green.bold("\n✔ Docker fixes applied.\n")
+  );
+
+  console.log("You may need to log out and back in for docker group changes.");
 }
 
 export function runFix(target, options = {}) {
-  if (target !== "cuda") {
-    console.error("Supported fix targets: cuda");
-    process.exit(1);
-  }
+  console.log(
+    chalk.cyan.bold(`
+JETSON AI FIXER — ${target.toUpperCase()}
+`)
+  );
 
-  console.log(chalk.cyan.bold("\nJETSON AI FIXER — CUDA\n"));
+  if (target === "cuda") {
+    const nvcc = run("which nvcc");
+    const cudaExists = run("ls /usr/local/cuda/bin/nvcc");
 
-  const cudaPath = run("ls -l /usr/local/cuda 2>/dev/null");
-  const nvccPath = run("which nvcc");
-  const cudaBinExists = run("test -x /usr/local/cuda/bin/nvcc && echo yes || echo no");
-  const currentPath = run("echo $PATH");
-  const currentLdPath = run("echo $LD_LIBRARY_PATH");
+    section("CUDA Symlink", run("ls -l /usr/local/cuda"));
+    section("Current nvcc", nvcc || "nvcc not found in PATH");
+    section("/usr/local/cuda/bin/nvcc exists", cudaExists ? "yes" : "no");
+    section("Current PATH", process.env.PATH);
+    section("Current LD_LIBRARY_PATH", process.env.LD_LIBRARY_PATH || "empty");
 
-  print("CUDA Symlink", cudaPath);
-  print("Current nvcc", nvccPath || "nvcc not found in PATH");
-  print("/usr/local/cuda/bin/nvcc exists", cudaBinExists);
-  print("Current PATH", currentPath);
-  print("Current LD_LIBRARY_PATH", currentLdPath || "empty");
+    if (nvcc) {
+      console.log(
+        chalk.green.bold("\n✔ CUDA nvcc is already available.\n")
+      );
 
-  if (nvccPath) {
-    console.log(chalk.green.bold("\n✔ CUDA nvcc is already available.\n"));
-    console.log(run("nvcc --version"));
-    return;
-  }
-
-  if (cudaBinExists === "yes" && !nvccPath) {
-    console.log(chalk.green.bold("\n✔ Fix available: CUDA exists, but nvcc is not in PATH.\n"));
-
-    const bashrcPath = path.join(os.homedir(), ".bashrc");
-    const backupPath = path.join(os.homedir(), ".bashrc.jetson-ai-backup");
-
-    const pathLine = "export PATH=/usr/local/cuda/bin:$PATH";
-    const ldPathLine = "export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH";
-
-    if (!options.apply) {
-      console.log("Preview mode. No changes were made.\n");
-      console.log("To apply the fix, run:\n");
-      console.log(chalk.white("jetson-ai fix cuda --apply\n"));
-
-      console.log("This will:");
-      console.log(`- Back up ${bashrcPath}`);
-      console.log("- Add CUDA bin to PATH");
-      console.log("- Add CUDA lib64 to LD_LIBRARY_PATH");
-      console.log("- Ask you to reload your shell");
+      console.log(run("nvcc --version"));
       return;
     }
 
-    fs.copyFileSync(bashrcPath, backupPath);
+    if (cudaExists) {
+      console.log(
+        chalk.green.bold("\n✔ Fix available: CUDA exists, but nvcc is not in PATH.\n")
+      );
 
-    const changedPath = appendIfMissing(bashrcPath, pathLine);
-    const changedLdPath = appendIfMissing(bashrcPath, ldPathLine);
+      if (options.apply) {
+        applyCudaFix();
+        return;
+      }
 
-    console.log(chalk.green.bold("\n✔ Applied CUDA PATH fix.\n"));
-    console.log(`Backup created: ${backupPath}`);
+      console.log("Run these commands:\n");
 
-    console.log("\nChanges:");
-    console.log(`PATH line added: ${changedPath ? "yes" : "already existed"}`);
-    console.log(`LD_LIBRARY_PATH line added: ${changedLdPath ? "yes" : "already existed"}`);
+      console.log(chalk.cyan("echo 'export PATH=/usr/local/cuda/bin:$PATH' >> ~/.bashrc"));
+      console.log(chalk.cyan("echo 'export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc"));
+      console.log(chalk.cyan("source ~/.bashrc"));
+      console.log(chalk.cyan("nvcc --version"));
 
-    console.log(chalk.yellow.bold("\nReload your shell now:"));
-    console.log(chalk.white("source ~/.bashrc"));
+      console.log("\nWhy:");
+      console.log("CUDA is installed, but your shell cannot find CUDA compiler binaries.");
+      return;
+    }
 
-    console.log(chalk.yellow.bold("\nThen verify:"));
-    console.log(chalk.white("nvcc --version"));
+    console.log(
+      chalk.red.bold("\n✖ CUDA toolkit does not appear installed.\n")
+    );
 
     return;
   }
 
-  console.log(chalk.red.bold("\n✖ No automatic CUDA PATH fix detected.\n"));
-  console.log("Next checks:");
-  console.log("- Verify CUDA packages: dpkg -l | grep cuda");
-  console.log("- Verify CUDA folder: ls -l /usr/local/cuda");
-  console.log("- Reinstall JetPack CUDA packages if needed.");
+  if (target === "docker") {
+    const dockerVersion = run("docker --version");
+    const dockerRuntime = run("docker info | grep -i runtime");
+
+    section("Docker Version", dockerVersion || "Docker not installed");
+    section("Docker Runtime", dockerRuntime || "No runtime info");
+
+    if (!dockerVersion) {
+      console.log(
+        chalk.red.bold("\n✖ Docker does not appear installed.\n")
+      );
+
+      return;
+    }
+
+    if (options.apply) {
+      applyDockerFix();
+      return;
+    }
+
+    console.log(
+      chalk.green.bold("\n✔ Docker detected.\n")
+    );
+
+    console.log("Suggested fixes:\n");
+
+    console.log(chalk.cyan("sudo systemctl start docker"));
+    console.log(chalk.cyan("sudo usermod -aG docker $USER"));
+
+    console.log("\nWhy:");
+    console.log("Ensures Docker daemon is running and user has Docker permissions.");
+
+    return;
+  }
+
+  console.log(
+    chalk.red.bold("\nUnknown fix target.\n")
+  );
 }
