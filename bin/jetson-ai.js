@@ -8,6 +8,7 @@ import { runMonitor } from "../src/commands/monitor.js";
 import { printBanner } from "../src/ui/banner.js";
 import { runExplain } from "../src/commands/explain.js";
 import { runBenchmark } from "../src/commands/benchmark.js";
+import { runModels } from "../src/commands/models.js";
 
 const program = new Command();
 
@@ -87,4 +88,8 @@ program
   .action((options) => {
     runBenchmark(options);
   });
+program
+  .command("models")
+  .description("Detect local AI models and caches")
+  .action(runModels);
 program.parse();
