@@ -81,6 +81,70 @@ function scanFiles(dirPath, extensions = []) {
   return results;
 }
 
+function detectQuantization(filename) {
+  const match = filename.match(/Q\d+_[A-Z]_[A-Z]|Q\d+_[A-Z]|Q\d+/i);
+  return match ? match[0].toUpperCase() : "unknown";
+}
+
+function estimateCompatibility(sizeBytes, quantization) {
+  const sizeGb = sizeBytes / 1024 / 1024 / 1024;
+
+  if (filenameLooksLikeMmproj(quantization)) {
+    return {
+      score: "N/A",
+      verdict: "Multimodal projector file, not the main LLM",
+      context: "N/A",
+      gpuOffload: "N/A"
+    };
+  }
+
+  if (sizeGb <= 3.5 && quantization.includes("Q4")) {
+    return {
+      score: "High",
+      verdict: "Good fit for Jetson Orin Nano 8GB",
+      context: "2048–4096",
+      gpuOffload: "Low to moderate. Start with -ngl 1 and increase carefully."
+    };
+  }
+
+  if (sizeGb <= 5.5) {
+    return {
+      score: "Medium",
+      verdict: "Possible, but memory pressure is likely",
+      context: "1024–2048",
+      gpuOffload: "Minimal. Start with CPU or -ngl 1."
+    };
+  }
+
+  return {
+    score: "Low",
+    verdict: "Risky on 8GB Jetson without aggressive tuning",
+    context: "512–1024",
+    gpuOffload: "Very low or CPU-only recommended."
+  };
+}
+
+function filenameLooksLikeMmproj(value) {
+  return value.toLowerCase().includes("mmproj");
+}
+
+function dedupeModels(files) {
+  const seen = new Set();
+  const unique = [];
+
+  for (const file of files) {
+    const stat = fs.statSync(file);
+    const key = `${path.basename(file)}:${stat.size}`;
+
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(file);
+    }
+  }
+
+  return unique;
+}
+
 function printSection(title) {
   console.log(chalk.cyan.bold(`\n${title}`));
 }
@@ -120,10 +184,10 @@ export function runModels() {
   printItem("Exists:", exists(jetsonLlmPath) ? "yes" : "no");
   printItem("Size:", formatBytes(getDirSize(jetsonLlmPath)));
 
-  const ggufFiles = [
+  const ggufFiles = dedupeModels([
     ...scanFiles(jetsonLlmPath, [".gguf"]),
     ...scanFiles(projectModelsPath, [".gguf"])
-  ];
+  ]);
 
   printSection("GGUF Models");
 
@@ -131,8 +195,22 @@ export function runModels() {
     console.log("No GGUF models found in known paths.");
   } else {
     for (const file of ggufFiles) {
-      const size = fs.statSync(file).size;
-      console.log(`- ${file} (${formatBytes(size)})`);
+      const stat = fs.statSync(file);
+      const filename = path.basename(file);
+      const quantization = filenameLooksLikeMmproj(filename)
+        ? "mmproj"
+        : detectQuantization(filename);
+
+      const compatibility = estimateCompatibility(stat.size, quantization);
+
+      console.log(chalk.green(`\n- ${filename}`));
+      printItem("Path:", file);
+      printItem("Size:", formatBytes(stat.size));
+      printItem("Quantization:", quantization);
+      printItem("Jetson 8GB Score:", compatibility.score);
+      printItem("Verdict:", compatibility.verdict);
+      printItem("Recommended Context:", compatibility.context);
+      printItem("GPU Offload:", compatibility.gpuOffload);
     }
   }
 
