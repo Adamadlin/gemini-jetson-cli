@@ -7,6 +7,7 @@ import { runFix } from "../src/commands/fix.js";
 import { runMonitor } from "../src/commands/monitor.js";
 import { printBanner } from "../src/ui/banner.js";
 import { runExplain } from "../src/commands/explain.js";
+import { runBenchmark } from "../src/commands/benchmark.js";
 
 const program = new Command();
 
@@ -74,5 +75,12 @@ program
   .argument("[path]", "Project path to analyze", ".")
   .action((targetPath) => {
     runExplain(targetPath);
+  });
+
+program
+  .command("benchmark")
+  .description("Run Jetson benchmark snapshot")
+  .action(() => {
+    runBenchmark();
   });
 program.parse();
