@@ -80,7 +80,11 @@ program
 program
   .command("benchmark")
   .description("Run Jetson benchmark snapshot")
-  .action(() => {
-    runBenchmark();
+  .option(
+    "--save",
+    "Save benchmark report as JSON"
+  )
+  .action((options) => {
+    runBenchmark(options);
   });
 program.parse();
