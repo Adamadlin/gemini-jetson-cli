@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { execSync } from "child_process";
 import chalk from "chalk";
 
@@ -19,7 +21,71 @@ function section(title, value) {
   console.log(value || "Not available");
 }
 
-export async function runBenchmark() {
+function collectBenchmarkData() {
+  return {
+    timestamp: new Date().toISOString(),
+
+    jetpack: run("cat /etc/nv_tegra_release"),
+
+    powerMode: run("nvpmodel -q"),
+
+    cpuInfo: run("lscpu | head -n 20"),
+
+    memory: run("free -h"),
+
+    disk: run("df -h / /ssd 2>/dev/null"),
+
+    cuda: run("nvcc --version"),
+
+    docker: run("docker --version"),
+
+    dockerRuntime: run(
+      "docker info | grep -i runtime"
+    ),
+
+    thermals: run(
+      "cat /sys/devices/virtual/thermal/thermal_zone*/temp 2>/dev/null | head"
+    ),
+
+    tegrastats: run(
+
+  "timeout 2 tegrastats --interval 1000"
+
+)
+  };
+}
+
+function saveBenchmark(data) {
+  const benchmarksDir = path.join(
+    process.cwd(),
+    "benchmarks"
+  );
+
+  if (!fs.existsSync(benchmarksDir)) {
+    fs.mkdirSync(benchmarksDir);
+  }
+
+  const timestamp = new Date()
+    .toISOString()
+    .replace(/:/g, "-");
+
+  const filename =
+    `benchmark-${timestamp}.json`;
+
+  const filepath = path.join(
+    benchmarksDir,
+    filename
+  );
+
+  fs.writeFileSync(
+    filepath,
+    JSON.stringify(data, null, 2)
+  );
+
+  return filepath;
+}
+
+export async function runBenchmark(options = {}) {
   console.log(
     chalk.cyan.bold(`
 ╔══════════════════════════════════════╗
@@ -28,62 +94,46 @@ export async function runBenchmark() {
 `)
   );
 
-  section(
-    "Timestamp",
-    new Date().toISOString()
-  );
+  const data = collectBenchmarkData();
 
-  section(
-    "JetPack",
-    run("cat /etc/nv_tegra_release")
-  );
+  section("Timestamp", data.timestamp);
 
-  section(
-    "Power Mode",
-    run("nvpmodel -q")
-  );
+  section("JetPack", data.jetpack);
 
-  section(
-    "CPU Info",
-    run("lscpu | head -n 20")
-  );
+  section("Power Mode", data.powerMode);
 
-  section(
-    "Memory",
-    run("free -h")
-  );
+  section("CPU Info", data.cpuInfo);
 
-  section(
-    "Disk",
-    run("df -h / /ssd 2>/dev/null")
-  );
+  section("Memory", data.memory);
 
-  section(
-    "CUDA",
-    run("nvcc --version")
-  );
+  section("Disk", data.disk);
 
-  section(
-    "Docker",
-    run("docker --version")
-  );
+  section("CUDA", data.cuda);
+
+  section("Docker", data.docker);
 
   section(
     "Docker NVIDIA Runtime",
-    run("docker info | grep -i runtime")
+    data.dockerRuntime
   );
 
-  section(
-    "Thermals",
-    run("cat /sys/devices/virtual/thermal/thermal_zone*/temp 2>/dev/null | head")
-  );
+  section("Thermals", data.thermals);
 
-  section(
-    "tegrastats",
-    run("tegrastats --interval 1000 --count 1")
-  );
+  section("tegrastats", data.tegrastats);
+
+  if (options.save) {
+    const filepath = saveBenchmark(data);
+
+    console.log(
+      chalk.green.bold(
+        `\n✔ Benchmark saved:\n${filepath}`
+      )
+    );
+  }
 
   console.log(
-    chalk.green.bold("\n✔ Benchmark snapshot complete.\n")
+    chalk.green.bold(
+      "\n✔ Benchmark snapshot complete.\n"
+    )
   );
 }
