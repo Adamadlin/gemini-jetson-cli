@@ -6,6 +6,7 @@ import { runAsk } from "../src/commands/ask.js";
 import { runFix } from "../src/commands/fix.js";
 import { runMonitor } from "../src/commands/monitor.js";
 import { printBanner } from "../src/ui/banner.js";
+import { runExplain } from "../src/commands/explain.js";
 
 const program = new Command();
 
@@ -66,4 +67,12 @@ if (process.argv.length === 2) {
   printBanner();
   process.exit(0);
 }
+
+program
+  .command("explain")
+  .description("Explain a project/repository architecture")
+  .argument("[path]", "Project path to analyze", ".")
+  .action((targetPath) => {
+    runExplain(targetPath);
+  });
 program.parse();
