@@ -91,5 +91,8 @@ program
 program
   .command("models")
   .description("Detect local AI models and caches")
-  .action(runModels);
+  .option("--json", "Output model detection results as JSON")
+  .action((options) => {
+    runModels(options);
+  });
 program.parse();
