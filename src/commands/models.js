@@ -127,23 +127,20 @@ function estimateCompatibility(sizeBytes, quantization) {
 function filenameLooksLikeMmproj(value) {
   return value.toLowerCase().includes("mmproj");
 }
-
 function dedupeModels(files) {
-  const seen = new Set();
-  const unique = [];
+  const seen = new Map();
 
   for (const file of files) {
-    const stat = fs.statSync(file);
-    const key = `${path.basename(file)}:${stat.size}`;
+    const filename = path.basename(file).toLowerCase();
 
-    if (!seen.has(key)) {
-      seen.add(key);
-      unique.push(file);
+    if (!seen.has(filename)) {
+      seen.set(filename, file);
     }
   }
 
-  return unique;
+  return Array.from(seen.values());
 }
+
 
 function printSection(title) {
   console.log(chalk.cyan.bold(`\n${title}`));
