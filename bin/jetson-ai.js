@@ -10,6 +10,8 @@ import { runExplain } from "../src/commands/explain.js";
 import { runBenchmark } from "../src/commands/benchmark.js";
 import { runModels } from "../src/commands/models.js";
 import { runOptimize } from "../src/commands/optimize.js";
+import { runPlan } from "../src/commands/plan.js";
+
 
 const program = new Command();
 
@@ -100,4 +102,11 @@ program
   .command("optimize")
   .description("Suggest Jetson LLM optimization settings")
   .action(runOptimize);
+program
+  .command("plan")
+  .description("Generate a prioritized development plan for a project")
+  .argument("[path]", "Project path to plan from", ".")
+  .action((targetPath) => {
+    runPlan(targetPath);
+  });
 program.parse();
