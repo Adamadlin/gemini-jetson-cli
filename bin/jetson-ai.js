@@ -9,6 +9,7 @@ import { printBanner } from "../src/ui/banner.js";
 import { runExplain } from "../src/commands/explain.js";
 import { runBenchmark } from "../src/commands/benchmark.js";
 import { runModels } from "../src/commands/models.js";
+import { runOptimize } from "../src/commands/optimize.js";
 
 const program = new Command();
 
@@ -95,4 +96,8 @@ program
   .action((options) => {
     runModels(options);
   });
+program
+  .command("optimize")
+  .description("Suggest Jetson LLM optimization settings")
+  .action(runOptimize);
 program.parse();
