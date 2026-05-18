@@ -1,0 +1,9 @@
+README.md
+pyproject.toml
+src/gemini_jetson_cli.egg-info/PKG-INFO
+src/gemini_jetson_cli.egg-info/SOURCES.txt
+src/gemini_jetson_cli.egg-info/dependency_links.txt
+src/gemini_jetson_cli.egg-info/entry_points.txt
+src/gemini_jetson_cli.egg-info/requires.txt
+src/gemini_jetson_cli.egg-info/top_level.txt
+tests/test_cli.py
