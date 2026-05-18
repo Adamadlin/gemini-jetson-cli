@@ -10,6 +10,7 @@ jetson_ai/__init__.py
 jetson_ai/cli.py
 jetson_ai/analyzers/__init__.py
 jetson_ai/analyzers/docker_analyzer.py
+jetson_ai/analyzers/jetson_analyzer.py
 jetson_ai/commands/__init__.py
 jetson_ai/commands/doctor.py
 jetson_ai/commands/fix.py
