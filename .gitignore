@@ -3,3 +3,8 @@ node_modules/
 *.log
 .DS_Store
 benchmarks/
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
