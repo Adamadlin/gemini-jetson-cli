@@ -3,7 +3,13 @@ import typer
 from rich.table import Table
 
 from jetson_ai.analyzers.project_analyzer import analyze_project
-from jetson_ai.ui.console import console, print_title, print_info, print_warn, print_ok
+from jetson_ai.ui.console import (
+    console,
+    print_title,
+    print_info,
+    print_warn,
+    print_ok,
+)
 
 plan_app = typer.Typer(help="Plan a project or next development step.")
 
@@ -15,7 +21,7 @@ def plan():
         "scan project → detect stack → suggest next steps"
     )
 
-    results = analyze_project()
+    results, next_actions = analyze_project()
 
     table = Table(title="Project Analysis")
     table.add_column("Component", style="cyan")
@@ -50,4 +56,7 @@ def plan():
     else:
         print_ok("Project structure looks healthy.")
 
-    print_info("Future versions will generate architecture-aware suggestions.")
+    print_info("Recommended next actions:")
+
+    for index, action in enumerate(next_actions, start=1):
+        console.print(f"  [cyan]{index}.[/cyan] {action}")
