@@ -1,34 +1,30 @@
 from jetson_ai.core.diagnostic import DiagnosticResult
+from jetson_ai.analyzers.docker_analyzer import check_docker
 from jetson_ai.utils.shell import command_exists
 
 
 def run_basic_scan() -> list[DiagnosticResult]:
     results: list[DiagnosticResult] = []
 
+    # Python check
     if command_exists("python3"):
-        results.append(DiagnosticResult("Python", "ok", "Python detected."))
-    else:
-        results.append(DiagnosticResult("Python", "error", "Python3 not found."))
-
-    if command_exists("docker"):
-        results.append(DiagnosticResult("Docker", "ok", "Docker detected."))
+        results.append(
+            DiagnosticResult(
+                "Python",
+                "ok",
+                "Python detected.",
+            )
+        )
     else:
         results.append(
             DiagnosticResult(
-                "Docker",
-                "warning",
-                "Docker not detected.",
-                "Install Docker before running Jetson AI container workflows.",
+                "Python",
+                "error",
+                "Python3 not found.",
             )
         )
 
-    results.append(
-        DiagnosticResult(
-            "NVIDIA Runtime",
-            "info",
-            "NVIDIA Docker runtime check is not implemented yet.",
-            "Implement Docker runtime analyzer.",
-        )
-    )
+    # Docker analyzer
+    results.extend(check_docker())
 
     return results
